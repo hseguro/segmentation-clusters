@@ -119,11 +119,8 @@ void calcNxN(int x, int y) {
 }
 
 int main() {
-  // calc8x8();
-  // calc16x16();
-  calcNxN(4096 * 2, 4096 * 2);
-  // for (int i = 1; i <= 1024; i++) {
-  //   calcNxN(i, i);
-  // }
+  calc8x8();
+  calc16x16();
+  calcNxN(1024, 1024);
   return 0;
 }

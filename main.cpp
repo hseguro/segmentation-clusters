@@ -16,14 +16,14 @@ void printer_points(vector<vector<uint>> *points) {
   }
   cout << "x: " << (*points).size() << endl;
   cout << "y: " << (*points)[0].size() << endl;
-  for (int x = 0; x < (*points).size(); x++) {
-    for (int y = 0; y < (*points)[0].size(); y++) {
-      if ((*points)[x][y] == 1) {
+  for (int y = 0; y < (*points)[0].size(); y++) {
+    for (int x = 0; x < (*points).size(); x++) {
+      if ((*points)[y][x] == 1) {
         cout << KRED;
       }
-      cout << (*points)[x][y] << " " << RST;
+      cout << (*points)[y][x] << " " << RST;
 
-      if (y == (*points)[0].size() - 1) {
+      if (x == (*points).size() - 1) {
         cout << endl;
       }
     }
@@ -76,7 +76,7 @@ void calc8x8() {
   cout << "Time: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " us" << endl;
   cout << "Time: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << endl;
 
-  printer_points(&contours);
+  // printer_points(&contours);
 }
 
 void calc16x16() {
@@ -93,7 +93,7 @@ void calc16x16() {
   cout << "Time: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " us" << endl;
   cout << "Time: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << endl;
 
-  printer_points(&contours);
+  // printer_points(&contours);
 }
 
 void calcNxN(int x, int y) {
@@ -102,6 +102,8 @@ void calcNxN(int x, int y) {
   vector<vector<uint>> points;
 
   generatePoints(&points, x, y);
+
+  // printer_points(&points);
 
   auto start = chrono::steady_clock::now();
   findContours(&points, &contours);
@@ -122,5 +124,6 @@ int main() {
   calc8x8();
   calc16x16();
   calcNxN(1024, 1024);
+
   return 0;
 }

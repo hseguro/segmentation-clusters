@@ -3,6 +3,8 @@
 #include <vector>
 #include <map>
 #include <iterator>
+#include <unordered_map>
+#include <omp.h>
 
 using namespace std;
 
@@ -33,6 +35,13 @@ class Cluster {
     Cluster() {
       coords = new vector<BoxCoordinates*>();
     }
+    void clear() {
+      for (int i = 0; i < coords->size(); i++) {
+        delete (*coords)[i];
+      }
+
+      delete coords;
+    }
 };
 
 struct CloudPoint {
@@ -60,20 +69,22 @@ bool sortByY(BoxCoordinates *i, BoxCoordinates *j) {
   return (i->y < j->y);
 }
 
-void findCluster(CloudPoint *family, vector<vector<Cluster*>> *cloud, int x, int y) {
-  #pragma omp for
+void findCluster(CloudPoint *family, unordered_map<unsigned int, Cluster*> *cloud, int x, int y, int w, int h) {
+  // #pragma omp for
   for (int i = 0; i < 8; i++) {
     int next_x = x + filters[i][0];
     int next_y = y + filters[i][1];
 
-    if (next_x > (*cloud).size() - 1 || next_x < 0 || next_y > ((*cloud)[0].size() - 1) || next_y < 0) {
+    if (next_x < 0 || next_y < 0 || next_x > w || next_y > h) {
       continue;
     }
 
-    if ((*cloud)[next_x][next_y] == nullptr) {
+    Cluster* tmp = (*cloud)[next_x + (next_y * w)];
+
+    if (tmp == nullptr) {
       continue;
     }
-    family->cluster = (*cloud)[next_x][next_y];
+    family->cluster = tmp;
     i = 8;
     continue;
   }
@@ -84,12 +95,7 @@ void findContours(vector<vector<uint>> *points, vector<vector<uint>> *contours) 
   int width = (*points).size();
   int height = (*points)[0].size();
 
-  vector<vector<Cluster*>> cloud(width);
-
-  #pragma omp for
-  for (int x = 0; x < width; x++) {
-    cloud[x] = vector<Cluster*>(height);
-  }
+  unordered_map<unsigned int, Cluster*> cloud;
 
   vector<Cluster*> clusters;
   
@@ -98,19 +104,22 @@ void findContours(vector<vector<uint>> *points, vector<vector<uint>> *contours) 
     for (int y = 0; y < height; y++) {
       if ((*points)[x][y] == 1) {
         CloudPoint family;
-        findCluster(&family, &cloud, x, y);
+        findCluster(&family, &cloud, x, y, width, height);
+        int index = x + (y * width);
         if (family.cluster == nullptr) {
           Cluster *cluster = new Cluster();
-          cloud[x][y] = cluster;
+          cloud[index] = cluster;
           clusters.insert(clusters.end(), cluster);
         } else {
-          cloud[x][y] = family.cluster;
+          cloud[index] = family.cluster;
         }
-        cloud[x][y]->coords->push_back(new BoxCoordinates(x, y));
+        
+        cloud[index]->coords->push_back(new BoxCoordinates(x, y));
       }
     }
   }
 
+  #pragma omp for
   for (int i = 0; i < clusters.size(); i++) {
     Cluster cluster = (*clusters[i]);
 
@@ -130,10 +139,14 @@ void findContours(vector<vector<uint>> *points, vector<vector<uint>> *contours) 
       (uint)max_x,
       (uint)max_y,
     });
+
+    clusters[i]->clear();
+
+    delete clusters[i];
+
+    // cout << "cluster deleted" << endl;
   }
 
-  cloud.clear();
-  cloud.shrink_to_fit();
-  clusters.clear();
-  clusters.shrink_to_fit();
+  // clusters.clear();
+  // clusters.shrink_to_fit();
 };
